@@ -1,45 +1,68 @@
 import React, { useEffect, useState } from "react";
-import useMap from "./hooks/useMap";
+import Leaflet from "leaflet";
 import "./App.css";
 
 const App = () => {
   const [position, setPosition] = useState({
-    latitude: 0,
-    longitude: 0,
+    latitude: null,
+    longitude: null,
     userAddress: null,
     error: null,
     loading: false,
   });
-
+  const [map, setMap] = useState(null);
   const [markers, setMarkers] = useState(null);
-
-  const { latitude, longitude } = position;
-
-  const { map } = useMap("userMap", latitude, longitude, markers);
+  const [currentMarker, setCurrentMarker] = useState(null);
 
   const getMarkers = async () => {
-    let marks = await [
+    setMarkers([
       {
-        latitude: 6.3345,
-        longitude: 3.93,
+        latitude: 12,
+        longitude: 13,
         info: { firstName: "John", lastName: "Smith" },
       },
       {
-        latitude: 5,
-        longitude: 3,
+        latitude: 10,
+        longitude: 9,
         info: { firstName: "John", lastName: "Smith" },
       },
       {
-        latitude: 4,
-        longitude: 3,
+        latitude: 17,
+        longitude: 12,
         info: { firstName: "John", lastName: "Smith" },
       },
-    ];
-    setMarkers(marks);
+    ]);
+  };
+
+  const createMarker = (latitude, longitude, options) => {
+    let marker = Leaflet.marker([latitude, longitude], options).addTo(map);
+
+    marker.on("click", () => {
+      setCurrentMarker(marker);
+      map.panTo([latitude, longitude], 13);
+    });
   };
 
   useEffect(() => {
+    let { latitude, longitude } = position;
+    if (latitude && longitude) {
+      let map = Leaflet.map("map", {
+        center: [latitude, longitude],
+        zoom: 13,
+      });
+      setMap(map);
+    }
     getMarkers();
+
+    if (map) {
+      markers?.foreach((marker) => {
+        let options = {
+          riseOnHover: true,
+        };
+
+        createMarker(marker.latitude, marker.longitude, options);
+      });
+    }
   }, [position]);
 
   const getCoordinates = (location) => {
@@ -96,8 +119,8 @@ const App = () => {
       );
     } else {
       setPosition({
-        latitude: 0,
-        longitude: 0,
+        latitude: null,
+        longitude: null,
         userAddress: null,
         error: "Your Browser Does Not Support HTML5 GeoLocation",
         loading: false,
@@ -109,9 +132,7 @@ const App = () => {
     <div className="container">
       {position.loading && <div className="loading" />}
       {position.error && <p className="error">Error: {position.error} </p>}
-      <h2 className="header">
-        HTML5 Geolocation With Leaflet and OpenStreetMap
-      </h2>
+      <h2 className="header">React Geolocation Example</h2>
       <button className="button" onClick={getLocation}>
         Get Co-ordinates
       </button>
@@ -120,9 +141,11 @@ const App = () => {
         <p>Latitude: {position.latitude}</p>
         <p>Longitude: {position.longitude}</p>
       </div>
-      <h4 className="coords">Leaflet with OpenStreetMap tiles</h4>
-      {/*<p className="address">Location on map: {position.userAddress}</p>*/}
-      <div className="map">{map && map}</div>
+      <h4 className="coords">Google Maps Reverse Geocoding</h4>
+      <p className="address">Address: {position.userAddress}</p>
+      <div className="map">
+        {map && <div id="map" style={{ height: "100%", width: "100%" }}></div>}
+      </div>
     </div>
   );
 };
